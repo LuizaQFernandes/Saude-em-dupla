@@ -326,22 +326,52 @@
     UI.renderWeekDays(rows);
   }
 
+  /** Dashboard do Histórico: gráfico de barras, heatmap de consistência e ranking por hábito. */
   function renderHistory() {
     const userId = uid();
     const now = new Date();
     const todayKey = Habits.todayKey();
-    const rows = Habits.getLastNDaysKeys(7, now).map((key) => {
+
+    // Gráfico de barras — últimos 14 dias, do mais antigo ao de hoje.
+    const chartKeys = Habits.getLastNDaysKeys(14, now).slice().reverse();
+    const chartRows = chartKeys.map((key) => {
       const date = Habits.keyToDate(key);
-      const { done, total } = Progress.calculateDailyPoints(userId, key);
-      return {
-        weekdayName: Habits.WEEKDAY_NAMES[date.getDay()],
-        dateLabel: Habits.formatShortDate(date),
-        done,
-        total,
-        isToday: key === todayKey
-      };
+      const percent = Progress.calculateDailyProgress(userId, key);
+      return { label: String(date.getDate()), percent, isToday: key === todayKey };
     });
-    UI.renderHistory(rows);
+    UI.renderHistoryChart(chartRows);
+
+    // Heatmap — últimas 5 semanas (segunda a domingo), como um mapa de calor.
+    const mondayThisWeek = Habits.keyToDate(Habits.getWeekKeys(now)[0]);
+    const heatmapStart = new Date(mondayThisWeek);
+    heatmapStart.setDate(heatmapStart.getDate() - 28);
+    const heatmapCells = [];
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(heatmapStart);
+      d.setDate(heatmapStart.getDate() + i);
+      if (d > now) {
+        heatmapCells.push({ level: 0, title: '' });
+        continue;
+      }
+      const key = Habits.dateToKey(d);
+      const percent = Progress.calculateDailyProgress(userId, key);
+      let level = 0;
+      if (percent >= 100) level = 3;
+      else if (percent >= 50) level = 2;
+      else if (percent > 0) level = 1;
+      heatmapCells.push({ level, title: `${Habits.formatShortDate(d)} · ${percent}%` });
+    }
+    UI.renderHistoryHeatmap(heatmapCells);
+
+    // Consistência por hábito — últimos 14 dias, do mais consistente ao menos.
+    const consistencyKeys = Habits.getLastNDaysKeys(14, now);
+    const consistencyRows = Users.getActiveHabits(userId)
+      .map((habit) => {
+        const done = consistencyKeys.reduce((sum, key) => sum + (Progress.isHabitCompleted(userId, habit.id, key) ? 1 : 0), 0);
+        return { habit, done, total: consistencyKeys.length, percent: Math.round((done / consistencyKeys.length) * 100) };
+      })
+      .sort((a, b) => b.percent - a.percent);
+    UI.renderHabitConsistency(consistencyRows);
   }
 
   // ---------------------------------------------------------------

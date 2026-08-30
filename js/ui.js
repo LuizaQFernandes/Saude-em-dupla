@@ -319,27 +319,50 @@ const UI = (() => {
       .join('');
   }
 
-  // ---------- Histórico ----------
+  // ---------- Histórico: dashboard ----------
 
-  function renderHistory(rows) {
-    $('history-list').innerHTML = rows
-      .map((r) => {
-        const percent = r.total > 0 ? Math.round((r.done / r.total) * 100) : 0;
-        return `
-        <div class="history-row">
-          <div class="history-label">${r.isToday ? 'Hoje' : r.weekdayName}<span class="history-date">${r.dateLabel}</span></div>
-          <div class="history-bar-track"><div class="history-bar-fill" style="width:${percent}%; background:${dotColor(r.done, r.total)}"></div></div>
-          <div class="history-score">${r.done}/${r.total}</div>
-        </div>`;
-      })
+  /** rows: [{ label, percent, isToday }], já em ordem cronológica (mais antigo → hoje). */
+  function renderHistoryChart(rows) {
+    $('history-chart').innerHTML = rows
+      .map(
+        (r) => `
+      <div class="history-chart-col ${r.isToday ? 'is-today' : ''}">
+        <div class="history-chart-track">
+          <div class="history-chart-bar" style="height:${Math.max(r.percent, 3)}%"></div>
+        </div>
+        <span class="history-chart-label">${r.label}</span>
+      </div>`
+      )
       .join('');
   }
 
-  function dotColor(done, total) {
-    if (total === 0) return 'var(--border-soft)';
-    if (done === total) return 'var(--success)';
-    if (done >= Math.ceil(total * 0.6)) return 'var(--warning)';
-    return 'var(--border-soft)';
+  /** cells: [{ level: 0-3, title }], 35 células em ordem cronológica (5 semanas × 7 dias). */
+  function renderHistoryHeatmap(cells) {
+    $('history-heatmap').innerHTML = cells
+      .map((c) => `<span class="heatmap-cell level-${c.level}" title="${escapeHtml(c.title)}"></span>`)
+      .join('');
+  }
+
+  /** rows: [{ habit: {icon, name}, done, total, percent }], já ordenado. */
+  function renderHabitConsistency(rows) {
+    const list = $('habit-consistency-list');
+    if (!rows.length) {
+      list.innerHTML = '<div class="questions-empty">Nenhum hábito ativo para mostrar.</div>';
+      return;
+    }
+    list.innerHTML = rows
+      .map(
+        (r) => `
+      <div class="habit-consistency-row">
+        <span class="habit-consistency-icon">${r.habit.icon}</span>
+        <div class="habit-consistency-info">
+          <div class="habit-consistency-name">${escapeHtml(r.habit.name)}</div>
+          <div class="habit-consistency-track"><div class="habit-consistency-fill" style="width:${r.percent}%"></div></div>
+        </div>
+        <span class="habit-consistency-value">${r.done}/${r.total}</span>
+      </div>`
+      )
+      .join('');
   }
 
   // ---------- Configurações ----------
@@ -605,7 +628,9 @@ const UI = (() => {
     renderClosing,
     renderWeekStats,
     renderWeekDays,
-    renderHistory,
+    renderHistoryChart,
+    renderHistoryHeatmap,
+    renderHabitConsistency,
     renderConfigForm,
     renderReminderTimesConfig,
     renderMyHabits,

@@ -158,7 +158,7 @@
 :root[data-theme="dark"] .habit-card,
 :root[data-theme="dark"] .question-item,
 :root[data-theme="dark"] .week-day-row,
-:root[data-theme="dark"] .history-row,
+:root[data-theme="dark"] .habit-consistency-row,
 :root[data-theme="dark"] .habit-row,
 :root[data-theme="dark"] .mandatory-picker-row,
 :root[data-theme="dark"] .modal-sheet,
@@ -179,7 +179,7 @@ body,
 .habit-card,
 .mandatory-card,
 .week-day-row,
-.history-row,
+.habit-consistency-row,
 .question-item,
 .modal-sheet,
 .bottom-nav,
@@ -224,7 +224,6 @@ button, input, textarea {
 .card-water-goal,
 .week-stat-value,
 .streak-value,
-.history-score,
 .closing-score {
   font-family: var(--font-mono);
 }
@@ -1623,58 +1622,142 @@ input[type="checkbox"] {
 .day-dot.yellow { background: var(--warning); }
 .day-dot.gray { background: var(--border-soft); }
 
-/* ---------- Histórico ---------- */
+/* ---------- Histórico: gráfico de barras ---------- */
 
-.history-list {
+.history-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  width: 100%;
+}
+
+.history-chart-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-chart-track {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.history-chart-bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--primary);
+  transition: height 0.5s ease;
+}
+
+.history-chart-col.is-today .history-chart-bar { background: var(--primary-dark); }
+
+.history-chart-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.history-chart-col.is-today .history-chart-label {
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+/* ---------- Histórico: heatmap de consistência ---------- */
+
+.history-heatmap {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: var(--border-soft);
+}
+
+.heatmap-cell.level-1 { background: var(--primary-light); }
+.heatmap-cell.level-2 { background: var(--primary); }
+.heatmap-cell.level-3 { background: var(--primary-dark); }
+
+.history-heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.heatmap-legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--border-soft);
+}
+
+.heatmap-legend-dot.level-1 { background: var(--primary-light); }
+.heatmap-legend-dot.level-2 { background: var(--primary); }
+.heatmap-legend-dot.level-3 { background: var(--primary-dark); }
+
+/* ---------- Histórico: consistência por hábito ---------- */
+
+.habit-consistency-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.history-row {
+.habit-consistency-row {
   background: var(--card);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 12px 16px;
   box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.history-bar-track {
-  flex: 1;
-  height: 10px;
+.habit-consistency-icon { font-size: 20px; flex-shrink: 0; }
+
+.habit-consistency-info { flex: 1; min-width: 0; }
+
+.habit-consistency-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.habit-consistency-track {
+  height: 8px;
   border-radius: var(--radius-pill);
   background: var(--border-soft);
   overflow: hidden;
 }
 
-.history-bar-fill {
+.habit-consistency-fill {
   height: 100%;
   border-radius: var(--radius-pill);
-  background: var(--success);
+  background: var(--primary);
+  transition: width 0.5s ease;
 }
 
-.history-label {
-  width: 74px;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.history-date {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  display: block;
-}
-
-.history-score {
-  width: 48px;
-  flex-shrink: 0;
-  text-align: right;
+.habit-consistency-value {
+  font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  width: 42px;
+  text-align: right;
 }
 
 /* ---------- Modais (bottom sheet) ---------- */

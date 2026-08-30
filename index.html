@@ -247,10 +247,31 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V12M12 20V4M19 20v-8"/><path d="M3.5 20h17"/></svg>
           Histórico
         </h1>
-        <p class="screen-subtitle">Últimos 7 dias</p>
+        <p class="screen-subtitle">Seu progresso em gráficos</p>
       </header>
+
+      <section class="card">
+        <h3 class="section-subtitle" style="margin-top:0;">Pontos por dia · últimos 14 dias</h3>
+        <div class="history-chart" id="history-chart"></div>
+      </section>
+
+      <section class="card">
+        <h3 class="section-subtitle" style="margin-top:0;">Consistência do mês</h3>
+        <div class="history-heatmap" id="history-heatmap"></div>
+        <div class="history-heatmap-legend">
+          <span>Menos</span>
+          <span class="heatmap-legend-dot level-0"></span>
+          <span class="heatmap-legend-dot level-1"></span>
+          <span class="heatmap-legend-dot level-2"></span>
+          <span class="heatmap-legend-dot level-3"></span>
+          <span>Mais</span>
+        </div>
+      </section>
+
       <section class="section-block">
-        <div class="history-list" id="history-list"></div>
+        <h2 class="section-title">Consistência por hábito</h2>
+        <p class="screen-subtitle" style="margin-top:-8px;">Últimos 14 dias</p>
+        <div class="habit-consistency-list" id="habit-consistency-list"></div>
       </section>
     </section>
 
