@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/31621248/README.md)
 # 💚 Saúde em Dupla
 
 Aplicativo de acompanhamento de hábitos saudáveis para duas pessoas (Luiza e Matheus), pensado **mobile-first**. Cada pessoa usa o app no próprio celular, registra seus hábitos do dia, acompanha o progresso e gera um resumo para compartilhar manualmente pelo WhatsApp.
@@ -42,7 +41,7 @@ Não existe backend, banco de dados, API externa, login ou sincronização entre
 
 ## Como abrir o app
 
-Este projeto é **modular** (`index.html` + `style.css` + `js/` + `assets/fonts/`) e é assim que ele é versionado e publicado
+Este projeto é **modular** (`index.html` + `style.css` + `js/` + `assets/fonts/`) e é assim que ele é versionado e publicado — não existe uma versão "tudo em um arquivo só" no repositório.
 
 **No computador (desenvolvimento):** sirva a pasta com qualquer servidor estático local, por exemplo:
 
