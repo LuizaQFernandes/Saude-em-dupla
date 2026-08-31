@@ -9,27 +9,44 @@ const Habits = (() => {
   // Catálogo inicial. "agua" é especial (contagem em ml) mas continua
   // sendo só mais um hábito do catálogo — a obrigatoriedade dele, como a de
   // qualquer outro, é decidida por usuário.
+  // "Fortalecimento de joelho" e "Whey" NÃO são mais hábitos padrão (só
+  // existiam aqui antes) — quem quiser pode recriá-los como hábito
+  // personalizado a qualquer momento (a biblioteca de ícones já tem 🦵 em
+  // Esportes e 🥤 em Alimentação). Isso não afeta quem já tinha esses
+  // hábitos de uma instalação anterior: eles continuam existindo no
+  // catálogo dessa pessoa, só não são mais semeados automaticamente para
+  // gente nova.
   const DEFAULT_HABITS = [
     { id: 'cardio', name: 'Cardio', icon: '🏃' },
     { id: 'academia', name: 'Academia', icon: '💪' },
-    { id: 'agua', name: '3 L de água', icon: '💧' },
+    { id: 'agua', name: 'Hidratação', icon: '💧' },
     { id: 'frutas', name: 'Frutas', icon: '🍓' },
     { id: 'legumes', name: 'Legumes', icon: '🥦' },
-    { id: 'whey', name: 'Whey', icon: '🥤' },
     { id: 'fio', name: 'Fio dental', icon: '🦷' },
-    { id: 'cotonete', name: 'Cotonete', icon: '🔊' },
-    { id: 'joelho', name: 'Fortalecimento de joelho', icon: '🦵' }
+    { id: 'cotonete', name: 'Cotonete', icon: '👂' }
   ];
 
   const WATER_HABIT_ID = 'agua';
 
-  /** Garante que os hábitos padrão existam no catálogo (idempotente, não destrutivo). */
+  /**
+   * Garante que os hábitos padrão existam no catálogo (idempotente, não
+   * destrutivo — nunca remove nada) e mantém nome/ícone dos hábitos padrão
+   * já existentes sincronizados com a definição atual acima (ex.: uma
+   * renomeação como "3 L de água" → "Hidratação" alcança quem já tinha o
+   * hábito de uma instalação anterior). Hábitos personalizados nunca são
+   * tocados aqui — só o próprio usuário edita esses.
+   */
   function seedDefaults() {
     const data = Storage.getData();
     let changed = false;
     DEFAULT_HABITS.forEach((h) => {
-      if (!data.habits[h.id]) {
+      const existing = data.habits[h.id];
+      if (!existing) {
         data.habits[h.id] = { id: h.id, name: h.name, icon: h.icon, type: 'default', createdAt: new Date().toISOString() };
+        changed = true;
+      } else if (existing.type === 'default' && (existing.name !== h.name || existing.icon !== h.icon)) {
+        existing.name = h.name;
+        existing.icon = h.icon;
         changed = true;
       }
     });

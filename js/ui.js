@@ -12,14 +12,14 @@ const UI = (() => {
   // vida — só para deixar o seletor navegável; não afeta nada na arquitetura.
   const EMOJI_CATEGORIES = [
     { label: '💄 Beleza', icons: ['💄', '🧴', '💅', '🪞', '🪒', '🧖', '✨', '💆'] },
-    { label: '🚿 Higiene', icons: ['🚿', '🛁', '🪥', '🧼', '🧻', '🚽'] },
+    { label: '🚿 Higiene', icons: ['🚿', '🛁', '🪥', '🦷', '👂', '🧼', '🧻', '🚽'] },
     { label: '💊 Saúde', icons: ['💊', '🩺', '🌡️', '💉', '🏥', '😴', '🧬'] },
     { label: '🍎 Alimentação', icons: ['🍎', '🥗', '🥦', '🍓', '🍌', '🥕', '☕', '💧', '🥤', '🍽️'] },
-    { label: '🏃 Esportes', icons: ['🏃', '🚴', '⚽', '🏊', '🏋️', '🧗', '🤸', '🥊', '🏓', '⛹️'] },
+    { label: '🏃 Esportes', icons: ['🏃', '🚴', '⚽', '🏊', '🏋️', '🧗', '🤸', '🥊', '🏓', '⛹️', '💪', '🦵', '🦶'] },
     { label: '📚 Estudos', icons: ['📚', '✏️', '💻', '🎓', '🧠', '📝', '🔬', '⏰'] },
     { label: '🧘 Bem-estar', icons: ['🧘', '🌙', '🌬️', '🕯️', '🎧', '🌿', '🙏', '😌'] },
     { label: '🏠 Rotina', icons: ['🏠', '🧹', '🧺', '🪴', '🐶', '🐱', '📅', '🗂️'] },
-    { label: '❤️ Outros', icons: ['❤️', '👪', '💞', '🎵', '🎨', '🎯', '⭐', '🏆', '🎮', '📷'] }
+    { label: '❤️ Outros', icons: ['❤️', '👪', '💞', '🎵', '🎨', '🎯', '⭐', '🏆', '🎮', '📷', '🔊'] }
   ];
 
   function $(id) {
@@ -208,15 +208,53 @@ const UI = (() => {
       .reverse()
       .map(
         (e) => `
-      <div class="water-entry-row">
+      <div class="water-entry-row" data-entry-row="${e.index}">
         <span>${escapeHtml(e.time)}</span>
         <span class="water-entry-amount ${e.ml < 0 ? 'negative' : ''}">${e.ml >= 0 ? '+' : ''}${e.ml} ml</span>
-        <button type="button" class="water-entry-delete" data-entry-index="${e.index}" aria-label="Remover este registro">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        </button>
+        <span class="water-entry-actions">
+          <button type="button" class="water-entry-edit" data-entry-edit="${e.index}" aria-label="Editar este registro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1Z"/></svg>
+          </button>
+          <button type="button" class="water-entry-delete" data-entry-index="${e.index}" aria-label="Remover este registro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </span>
       </div>`
       )
       .join('');
+  }
+
+  function renderWaterEntriesTotal(totalMl) {
+    $('water-entries-total').textContent = `Total: ${totalMl.toLocaleString('pt-BR')} ml`;
+  }
+
+  /** Troca a linha de um registro pelo modo de edição inline (input + salvar/cancelar). */
+  function showWaterEntryEditRow(entryIndex, currentMl) {
+    const row = document.querySelector(`.water-entry-row[data-entry-row="${entryIndex}"]`);
+    if (!row) return;
+    row.innerHTML = `
+      <input type="number" class="water-entry-edit-input" value="${currentMl}" step="1" />
+      <span class="water-entry-actions">
+        <button type="button" class="water-entry-save" data-entry-save="${entryIndex}" aria-label="Salvar edição">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
+        </button>
+        <button type="button" class="water-entry-cancel" data-entry-cancel="${entryIndex}" aria-label="Cancelar edição">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </span>`;
+  }
+
+  // ---------- Modal de hidratação: troca de abas ----------
+
+  function switchWaterTab(tabName) {
+    document.querySelectorAll('.water-tab').forEach((btn) => {
+      const active = btn.dataset.waterTab === tabName;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    document.querySelectorAll('.water-tab-panel').forEach((panel) => {
+      panel.classList.toggle('water-tab-panel-inactive', panel.dataset.waterPanel !== tabName);
+    });
   }
 
   // ---------- Grade de desafios (dinâmica) ----------
@@ -375,13 +413,15 @@ const UI = (() => {
     $('config-reminders-toggle').checked = !!settings.remindersEnabled;
   }
 
+  /** schedule: [{ id, title, time, disabled }] — vem de Reminders.getScheduleForConfig(). */
   function renderReminderTimesConfig(schedule) {
     $('reminder-times-list').innerHTML = schedule
       .map(
         (item) => `
-      <div class="reminder-time-row">
+      <div class="reminder-time-row ${item.disabled ? 'is-disabled' : ''}">
+        <input type="checkbox" class="switch-input" data-reminder-toggle="${item.id}" ${item.disabled ? '' : 'checked'} aria-label="Ativar/desativar este lembrete" />
         <span class="reminder-time-row-label">${escapeHtml(item.title)}</span>
-        <input type="time" data-reminder-id="${item.id}" value="${item.time}" />
+        <input type="time" data-reminder-id="${item.id}" value="${item.time}" ${item.disabled ? 'disabled' : ''} />
       </div>`
       )
       .join('');
@@ -432,10 +472,12 @@ const UI = (() => {
 
   function openMyHabitsScreen() {
     $('screen-my-habits').classList.remove('hidden');
+    lockBodyScroll();
   }
 
   function closeMyHabitsScreen() {
     $('screen-my-habits').classList.add('hidden');
+    unlockBodyScroll();
   }
 
   // ---------- Formulário de hábito (criar/editar) ----------
@@ -476,19 +518,34 @@ const UI = (() => {
     openModal('modal-habit-form');
   }
 
-  // ---------- Onboarding: passo 2 ----------
+  // ---------- Onboarding: passo 2 (quais hábitos padrão ativar) ----------
 
-  function renderMandatoryPicker(habits) {
-    $('mandatory-picker-list').innerHTML = habits
+  /** Todos vêm pré-marcados — a pessoa desmarca o que não quiser usar agora. */
+  function renderHabitActivePicker(habits) {
+    $('habit-active-picker-list').innerHTML = habits
       .map(
         (h) => `
-      <label class="mandatory-picker-row" data-picker-row="${h.id}">
-        <input type="checkbox" data-picker-habit="${h.id}" />
-        <span class="mandatory-picker-emoji">${h.icon}</span>
-        <span class="mandatory-picker-name">${escapeHtml(h.name)}</span>
+      <label class="habit-picker-row checked" data-picker-row="${h.id}">
+        <input type="checkbox" data-picker-habit="${h.id}" checked />
+        <span class="habit-picker-emoji">${h.icon}</span>
+        <span class="habit-picker-name">${escapeHtml(h.name)}</span>
       </label>`
       )
       .join('');
+  }
+
+  // ---------- Configurações: chips de dia de trabalho ----------
+
+  function setWorkdayChips(workDays) {
+    document.querySelectorAll('#config-workday-chips .workday-chip').forEach((chip) => {
+      chip.classList.toggle('selected', workDays.includes(Number(chip.dataset.workday)));
+    });
+  }
+
+  function getWorkdayChipsSelection() {
+    return Array.from(document.querySelectorAll('#config-workday-chips .workday-chip.selected')).map((chip) =>
+      Number(chip.dataset.workday)
+    );
   }
 
   // ---------- Banner de lembrete ----------
@@ -507,14 +564,48 @@ const UI = (() => {
 
   // ---------- Modais ----------
 
+  /**
+   * Trava o scroll do body sem perder a posição (necessário no iOS, onde
+   * apenas overflow:hidden não impede o "bounce" por trás de um modal).
+   * Contador de referência: vários modais podem abrir empilhados (ex.:
+   * confirmação sobre um modal já aberto) e só destravamos quando o
+   * último deles fecha.
+   */
+  let scrollLockCount = 0;
+  let savedScrollY = 0;
+
+  function lockBodyScroll() {
+    if (scrollLockCount === 0) {
+      savedScrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${savedScrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    }
+    scrollLockCount += 1;
+  }
+
+  function unlockBodyScroll() {
+    scrollLockCount = Math.max(0, scrollLockCount - 1);
+    if (scrollLockCount === 0) {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      window.scrollTo(0, savedScrollY);
+    }
+  }
+
   function openModal(id) {
     $(id).classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
   }
 
   function closeModal(id) {
     $(id).classList.add('hidden');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
   }
 
   function openConfirm(title, message) {
@@ -591,7 +682,8 @@ const UI = (() => {
 
   function showOnboardingStep(step) {
     $('onboarding-step-name').classList.toggle('hidden', step !== 'name');
-    $('onboarding-step-mandatory').classList.toggle('hidden', step !== 'mandatory');
+    $('onboarding-step-habits').classList.toggle('hidden', step !== 'habits');
+    $('onboarding-step-workdays').classList.toggle('hidden', step !== 'workdays');
   }
 
   function showOnboarding() {
@@ -621,6 +713,9 @@ const UI = (() => {
     celebrateWaterGoal,
     celebrateDayComplete,
     renderWaterEntries,
+    renderWaterEntriesTotal,
+    showWaterEntryEditRow,
+    switchWaterTab,
     renderWaterModalSummary,
     renderHabitGrid,
     pulseHabitCard,
@@ -639,7 +734,9 @@ const UI = (() => {
     openHabitForm,
     setEmojiSelected,
     setMandatoryRadio,
-    renderMandatoryPicker,
+    renderHabitActivePicker,
+    setWorkdayChips,
+    getWorkdayChipsSelection,
     showOnboardingStep,
     showReminderBanner,
     openModal,

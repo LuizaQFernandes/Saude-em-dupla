@@ -1,6 +1,6 @@
 # 💚 Saúde em Dupla
 
-Aplicativo de acompanhamento de hábitos saudáveis para duas pessoas (Luiza e Matheus), pensado **mobile-first**. Cada pessoa usa o app no próprio celular, registra seus hábitos do dia, acompanha o progresso e gera um resumo para compartilhar manualmente pelo WhatsApp.
+Aplicativo de acompanhamento de hábitos saudáveis para duas pessoas, pensado **mobile-first**. Cada pessoa usa o app no próprio celular, registra seus hábitos do dia, acompanha o progresso e gera um resumo para compartilhar manualmente pelo WhatsApp.
 
 Não existe backend, banco de dados, API externa, login ou sincronização entre dispositivos — é **HTML + CSS + JavaScript puro**, e todos os dados ficam salvos localmente no navegador (`localStorage`) do próprio celular.
 
@@ -17,7 +17,7 @@ Não existe backend, banco de dados, API externa, login ou sincronização entre
 ## Funcionalidades
 
 **Hábitos**
-- 9 hábitos padrão (Cardio, Academia, Água, Frutas, Legumes, Whey, Fio dental, Cotonete, Fortalecimento de joelho) + possibilidade de criar hábitos personalizados (nome, ícone e obrigatoriedade escolhidos pelo usuário, com uma biblioteca de mais de 70 emojis organizados por categoria).
+- 7 hábitos padrão (Cardio, Academia, Hidratação, Frutas, Legumes, Fio dental, Cotonete) + possibilidade de criar hábitos personalizados (nome, ícone e obrigatoriedade escolhidos pelo usuário, com uma biblioteca de mais de 70 emojis organizados por categoria — inclusive para recriar hábitos que já foram padrão, como "Whey" ou "Fortalecimento de joelho").
 - Cada usuário decide, para cada hábito, se ele está **ativo** e se é **obrigatório** — essa configuração é individual: o mesmo hábito pode ser obrigatório para uma pessoa e opcional para a outra.
 - Pontuação e progresso do dia são sempre calculados dinamicamente a partir dos hábitos ativos daquele usuário (não existe um "total fixo" de pontos).
 
@@ -81,7 +81,7 @@ User.habitSettings[habitId] →  como esta pessoa usa esse hábito (active, mand
 Days[userId][data]          →  o que foi concluído naquele dia, água e horários
 ```
 
-Isso permite, por exemplo, que "Fortalecimento de joelho" seja obrigatório para uma pessoa e opcional para a outra sem duplicar o hábito, e que a pontuação máxima do dia se ajuste automaticamente conforme hábitos são ativados, desativados ou criados.
+Isso permite, por exemplo, que "Cardio" seja obrigatório para uma pessoa e opcional para a outra sem duplicar o hábito, e que a pontuação máxima do dia se ajuste automaticamente conforme hábitos são ativados, desativados ou criados.
 
 ## Design
 

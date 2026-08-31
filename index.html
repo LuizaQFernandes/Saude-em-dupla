@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <meta name="theme-color" content="#F7F6EE" id="meta-theme-color" />
+<!-- Evita que o Safari/iOS "detecte" números (datas, horários, quantidades
+     nos cards de hábito) e os transforme automaticamente em links azuis. -->
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
 <title>💚 Saúde em Dupla</title>
 <script>
   // Aplica o tema salvo ANTES do primeiro paint, para não haver flash
@@ -31,22 +34,35 @@
     <div class="onboarding-logo">💚</div>
     <h1 id="onboarding-title">Saúde em Dupla</h1>
     <p class="onboarding-subtitle">Como podemos te chamar?</p>
-    <div class="onboarding-options">
-      <button type="button" class="btn btn-outline onboarding-name-btn" data-name="Luiza">Luiza</button>
-      <button type="button" class="btn btn-outline onboarding-name-btn" data-name="Matheus">Matheus</button>
-    </div>
-    <div class="onboarding-divider"><span>ou</span></div>
-    <label class="field-label" for="onboarding-input">Digite seu nome</label>
+    <label class="field-label" for="onboarding-input">Seu nome</label>
     <input id="onboarding-input" class="text-input" type="text" placeholder="Seu nome" maxlength="30" autocomplete="given-name" />
     <button type="button" id="onboarding-next" class="btn btn-primary" disabled>Continuar</button>
   </div>
 
-  <!-- Passo 2: hábitos obrigatórios -->
-  <div class="onboarding-card hidden" id="onboarding-step-mandatory">
-    <div class="onboarding-logo">🦵</div>
-    <h1>Quais hábitos são obrigatórios para você?</h1>
-    <p class="onboarding-subtitle">Pode escolher nenhum, um ou vários — e mudar depois quando quiser.</p>
-    <div class="mandatory-picker-list" id="mandatory-picker-list"></div>
+  <!-- Passo 2: quais hábitos padrão a pessoa vai usar -->
+  <div class="onboarding-card hidden" id="onboarding-step-habits">
+    <div class="onboarding-logo">🌱</div>
+    <h1>Quais hábitos você vai acompanhar?</h1>
+    <p class="onboarding-subtitle">Os marcados começam ativos. Os demais continuam disponíveis, só desativados — dá pra ligar/desligar a qualquer momento.</p>
+    <div class="habit-picker-list" id="habit-active-picker-list"></div>
+    <p class="onboarding-note">💡 Você também pode criar hábitos personalizados a qualquer hora em ⚙️ Meus hábitos.</p>
+    <button type="button" id="onboarding-habits-next" class="btn btn-primary btn-block">Continuar</button>
+  </div>
+
+  <!-- Passo 3: dias de trabalho -->
+  <div class="onboarding-card hidden" id="onboarding-step-workdays">
+    <div class="onboarding-logo">📅</div>
+    <h1>Quais dias você trabalha?</h1>
+    <p class="onboarding-subtitle">Usamos isso só para priorizar os lembretes de exercício certos: depois do expediente em dia de trabalho, de manhã em dia de folga.</p>
+    <div class="workday-picker" id="workday-picker">
+      <label class="workday-picker-row"><input type="checkbox" data-workday="1" checked /><span>Segunda</span></label>
+      <label class="workday-picker-row"><input type="checkbox" data-workday="2" checked /><span>Terça</span></label>
+      <label class="workday-picker-row"><input type="checkbox" data-workday="3" checked /><span>Quarta</span></label>
+      <label class="workday-picker-row"><input type="checkbox" data-workday="4" checked /><span>Quinta</span></label>
+      <label class="workday-picker-row"><input type="checkbox" data-workday="5" checked /><span>Sexta</span></label>
+      <label class="workday-picker-row"><input type="checkbox" data-workday="6" /><span>Sábado</span></label>
+      <label class="workday-picker-row"><input type="checkbox" data-workday="0" /><span>Domingo</span></label>
+    </div>
     <button type="button" id="onboarding-finish" class="btn btn-primary btn-block">Começar</button>
   </div>
 </div>
@@ -116,7 +132,7 @@
            tocar no card). -->
       <section class="card card-water hidden" id="card-water" role="button" tabindex="0" aria-label="Ver detalhes da água e corrigir registros">
         <div class="card-water-header">
-          💧 Água
+          💧 Hidratação
           <span class="mandatory-badge hidden" id="water-mandatory-badge">OBRIGATÓRIO</span>
         </div>
 
@@ -166,6 +182,10 @@
             Meus hábitos
           </button>
         </div>
+        <button type="button" id="home-add-habit-btn" class="btn-text-icon" aria-label="Adicionar hábito personalizado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg>
+          Adicionar hábito
+        </button>
       </section>
 
       <!-- Perguntas contextuais -->
@@ -306,7 +326,7 @@
         <label class="field-label" for="config-name">Nome</label>
         <input id="config-name" class="text-input" type="text" maxlength="30" />
 
-        <label class="field-label" for="config-water-goal">Meta de água (ml)</label>
+        <label class="field-label" for="config-water-goal">Meta de hidratação (ml)</label>
         <input id="config-water-goal" class="text-input" type="number" min="500" max="10000" step="50" />
 
         <div class="field-row">
@@ -318,6 +338,17 @@
             <label class="field-label" for="config-work-end">Fim do expediente</label>
             <input id="config-work-end" class="text-input" type="time" />
           </div>
+        </div>
+
+        <label class="field-label">Dias que você trabalha</label>
+        <div class="workday-chip-row" id="config-workday-chips">
+          <button type="button" class="workday-chip" data-workday="1">Seg</button>
+          <button type="button" class="workday-chip" data-workday="2">Ter</button>
+          <button type="button" class="workday-chip" data-workday="3">Qua</button>
+          <button type="button" class="workday-chip" data-workday="4">Qui</button>
+          <button type="button" class="workday-chip" data-workday="5">Sex</button>
+          <button type="button" class="workday-chip" data-workday="6">Sáb</button>
+          <button type="button" class="workday-chip" data-workday="0">Dom</button>
         </div>
 
         <button type="button" id="config-save" class="btn btn-primary btn-block btn-form-submit">Salvar</button>
@@ -344,6 +375,10 @@
         <button type="button" id="config-clear-history" class="btn btn-danger btn-block btn-with-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15"/><path d="M9.5 7V4.8c0-.4.4-.8.9-.8h4.2c.5 0 .9.4.9.8V7"/><path d="M6.5 7l.9 12.2c.1 1 .9 1.8 1.9 1.8h5.4c1 0 1.8-.8 1.9-1.8L17.5 7"/><path d="M10.3 11v6M13.7 11v6"/></svg>
           Apagar histórico
+        </button>
+        <button type="button" id="config-logout" class="btn btn-danger btn-block btn-with-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 8V6.2C14.5 5 13.5 4 12.2 4H6.2C5 4 4 5 4 6.2v11.6C4 19 5 20 6.2 20h6c1.3 0 2.3-1 2.3-2.2V16"/><path d="M9 12h11m0 0-3.2-3.2M20 12l-3.2 3.2"/></svg>
+          Sair do app
         </button>
       </section>
     </section>
@@ -438,47 +473,73 @@
   </div>
 </div>
 
-<!-- ===================== MODAL: ÁGUA ===================== -->
+<!-- ===================== MODAL: ÁGUA (3 abas) ===================== -->
 <div id="modal-water" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-water-title">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <h2 id="modal-water-title" class="modal-title">💧 Editar água de hoje</h2>
+    <h2 id="modal-water-title" class="modal-title">💧 Hidratação</h2>
 
+    <!-- Resumo sempre visível, independente da aba selecionada -->
     <div class="water-modal-summary">
       <span class="card-water-current" id="water-modal-current">0</span>
       <span class="card-water-goal" id="water-modal-goal">/ 3.000 ml</span>
     </div>
     <div class="water-modal-bar-track"><div class="water-modal-bar-fill" id="water-modal-bar-fill"></div></div>
 
-    <div class="water-goal-edit-row">
-      <label class="field-label" for="water-modal-goal-input" style="margin:0; flex-shrink:0;">Meta diária</label>
-      <input id="water-modal-goal-input" class="text-input" type="number" min="500" max="10000" step="50" />
-      <button type="button" id="water-modal-goal-save" class="btn btn-outline">Salvar</button>
+    <div class="water-tabs-scroll">
+      <div class="water-tabs" role="tablist">
+        <button type="button" class="water-tab active" data-water-tab="goal" role="tab" aria-selected="true">Meta diária</button>
+        <button type="button" class="water-tab" data-water-tab="adjust" role="tab" aria-selected="false">Ajustar volume</button>
+        <button type="button" class="water-tab" data-water-tab="entries" role="tab" aria-selected="false">Registros do dia</button>
+      </div>
     </div>
 
-    <label class="field-label">Adicionar</label>
-    <div class="water-modal-grid">
-      <button type="button" class="btn btn-outline water-amount-btn" data-ml="250">+250 ml</button>
-      <button type="button" class="btn btn-outline water-amount-btn" data-ml="500">+500 ml</button>
-      <button type="button" class="btn btn-outline water-amount-btn" data-ml="750">+750 ml</button>
+    <!-- As 3 abas ficam empilhadas na mesma área (ver .water-tab-panels no
+         CSS) para que o tamanho do modal não mude ao trocar de aba — a aba
+         mais alta (Ajustar volume) define a altura, e as outras só ficam
+         invisíveis por cima do espaço reservado. -->
+    <div class="water-tab-panels">
+      <!-- Aba 1: Meta diária -->
+      <div class="water-tab-panel" data-water-panel="goal">
+        <label class="field-label" for="water-modal-goal-input" style="margin-top:0;">Sua meta de hidratação</label>
+        <div class="water-goal-edit-row">
+          <input id="water-modal-goal-input" class="text-input" type="number" min="500" max="10000" step="50" />
+          <span class="water-goal-unit">ml</span>
+        </div>
+        <button type="button" id="water-modal-goal-save" class="btn btn-primary btn-block btn-form-submit">Salvar</button>
+      </div>
+
+      <!-- Aba 2: Ajustar volume (corrigir erros — adicionar ou remover) -->
+      <div class="water-tab-panel water-tab-panel-inactive" data-water-panel="adjust">
+        <label class="field-label" style="margin-top:0;">Adicionar</label>
+        <div class="water-modal-grid">
+          <button type="button" class="btn btn-outline water-amount-btn" data-ml="250">+250 ml</button>
+          <button type="button" class="btn btn-outline water-amount-btn" data-ml="500">+500 ml</button>
+          <button type="button" class="btn btn-outline water-amount-btn" data-ml="750">+750 ml</button>
+        </div>
+
+        <label class="field-label">Remover</label>
+        <div class="water-modal-grid water-modal-grid-remove">
+          <button type="button" class="btn btn-outline water-amount-btn water-amount-btn-remove" data-ml="-100">−100 ml</button>
+          <button type="button" class="btn btn-outline water-amount-btn water-amount-btn-remove" data-ml="-250">−250 ml</button>
+          <button type="button" class="btn btn-outline water-amount-btn water-amount-btn-remove" data-ml="-500">−500 ml</button>
+        </div>
+
+        <label class="field-label" for="water-custom-input">Ou digite um valor (ml)</label>
+        <div class="water-custom-row">
+          <button type="button" id="water-custom-sign" class="water-sign-btn" data-sign="1" aria-label="Alternar entre adicionar e remover">+</button>
+          <input id="water-custom-input" class="text-input" type="number" min="1" max="5000" placeholder="Ex: 350" inputmode="numeric" />
+          <button type="button" id="water-custom-add" class="btn btn-primary">Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Aba 3: Registros do dia (visualizar, editar e excluir cada lançamento) -->
+      <div class="water-tab-panel water-tab-panel-inactive" data-water-panel="entries">
+        <div class="water-entries-total" id="water-entries-total">Total: 0 ml</div>
+        <div class="water-entries" id="water-entries-list"></div>
+      </div>
     </div>
 
-    <label class="field-label">Remover</label>
-    <div class="water-modal-grid water-modal-grid-remove">
-      <button type="button" class="btn btn-outline water-amount-btn water-amount-btn-remove" data-ml="-100">−100 ml</button>
-      <button type="button" class="btn btn-outline water-amount-btn water-amount-btn-remove" data-ml="-250">−250 ml</button>
-      <button type="button" class="btn btn-outline water-amount-btn water-amount-btn-remove" data-ml="-500">−500 ml</button>
-    </div>
-
-    <label class="field-label" for="water-custom-input">Ou digite um valor (ml)</label>
-    <div class="water-custom-row">
-      <button type="button" id="water-custom-sign" class="water-sign-btn" data-sign="1" aria-label="Alternar entre adicionar e remover">+</button>
-      <input id="water-custom-input" class="text-input" type="number" min="1" max="5000" placeholder="Ex: 350" inputmode="numeric" />
-      <button type="button" id="water-custom-add" class="btn btn-primary">Adicionar</button>
-    </div>
-
-    <label class="field-label">Registros de hoje</label>
-    <div class="water-entries" id="water-entries-list"></div>
     <button type="button" class="btn btn-text modal-close-btn" data-close-modal="modal-water">Fechar</button>
   </div>
 </div>
@@ -493,8 +554,8 @@
     </h2>
 
     <div class="summary-tabs">
-      <button type="button" class="summary-tab active" data-summary-tab="completo">Completo</button>
-      <button type="button" class="summary-tab" data-summary-tab="compacto">Compacto</button>
+      <button type="button" class="summary-tab active" data-summary-tab="compacto">Compacto</button>
+      <button type="button" class="summary-tab" data-summary-tab="completo">Completo</button>
     </div>
 
     <textarea id="summary-text" class="summary-textarea" readonly rows="8"></textarea>

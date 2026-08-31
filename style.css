@@ -160,7 +160,8 @@
 :root[data-theme="dark"] .week-day-row,
 :root[data-theme="dark"] .habit-consistency-row,
 :root[data-theme="dark"] .habit-row,
-:root[data-theme="dark"] .mandatory-picker-row,
+:root[data-theme="dark"] .habit-picker-row,
+:root[data-theme="dark"] .workday-picker-row,
 :root[data-theme="dark"] .modal-sheet,
 :root[data-theme="dark"] .text-input,
 :root[data-theme="dark"] .bottom-nav,
@@ -188,7 +189,9 @@ body,
 .btn,
 .empty-state,
 .habit-row,
-.mandatory-picker-row {
+.habit-picker-row,
+.workday-picker-row,
+.workday-chip {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -200,6 +203,12 @@ html, body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  /* Sem isso, a área de "elástico" do scroll no iOS (e qualquer pedaço da
+     tela fora do body) usa o fundo padrão do navegador — que segue o Dark
+     Mode do SISTEMA mesmo com o app em Light Mode, deixando a tela
+     parcialmente escura. Com o <html> pintado igual ao <body>, o app
+     controla 100% do que aparece, nos dois temas. */
+  background: var(--bg);
 }
 
 body {
@@ -1132,48 +1141,18 @@ h1, h2, h3, p { margin: 0; }
   margin-bottom: 8px;
 }
 
-.onboarding-options {
-  display: flex;
-  gap: 10px;
-}
+/* ---------- Onboarding passo 2: quais hábitos padrão usar ---------- */
 
-.onboarding-options .btn { flex: 1; }
-
-.onboarding-name-btn.selected {
-  background: var(--primary);
-  border-color: var(--primary);
-  font-weight: 800;
-}
-
-.onboarding-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin: 8px 0;
-}
-
-.onboarding-divider::before,
-.onboarding-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-soft);
-}
-
-/* ---------- Onboarding passo 2: hábitos obrigatórios ---------- */
-
-.mandatory-picker-list {
+.habit-picker-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 46vh;
+  max-height: 40vh;
   overflow-y: auto;
   margin-bottom: 8px;
 }
 
-.mandatory-picker-row {
+.habit-picker-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1184,23 +1163,88 @@ h1, h2, h3, p { margin: 0; }
   min-height: 52px;
 }
 
-.mandatory-picker-row.checked {
+.habit-picker-row.checked {
   border-color: var(--primary-dark);
   background: var(--primary-light);
 }
 
-.mandatory-picker-row input[type="checkbox"] {
+.habit-picker-row input[type="checkbox"] {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
 }
 
-.mandatory-picker-emoji { font-size: 20px; }
+.habit-picker-emoji { font-size: 20px; }
 
-.mandatory-picker-name {
+.habit-picker-name {
   font-size: 14px;
   font-weight: 700;
   flex: 1;
+}
+
+.onboarding-note {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin: 4px 0 10px;
+  line-height: 1.4;
+}
+
+/* ---------- Onboarding passo 3: dias de trabalho ---------- */
+
+.workday-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.workday-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 2px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  min-height: 48px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.workday-picker-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Chips compactos de dia de trabalho (tela de Configurações) */
+
+.workday-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.workday-chip {
+  min-height: 40px;
+  min-width: 44px;
+  flex: 1;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-soft);
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workday-chip.selected {
+  border-color: var(--primary-dark);
+  background: var(--primary-light);
+  color: var(--text-dark);
 }
 
 /* ---------- Tela cheia: Meus hábitos ---------- */
@@ -1837,12 +1881,124 @@ input[type="checkbox"] {
 .water-goal-edit-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
-.water-goal-edit-row .text-input { flex: 1; min-height: 44px; }
-.water-goal-edit-row .btn { min-height: 44px; padding: 0 16px; }
+.water-goal-edit-row .text-input { flex: 1; min-height: 48px; font-size: 18px; font-family: var(--font-mono); }
+
+.water-goal-unit {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ---- Abas do modal de água ---- */
+
+.water-tabs-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0 -20px 16px;
+  padding: 0 20px;
+}
+
+.water-tabs {
+  display: flex;
+  gap: 8px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.water-tab {
+  flex: 1;
+  min-width: 116px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-soft);
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.water-tab.active {
+  background: var(--primary-light);
+  border-color: var(--primary-dark);
+  color: var(--text-dark);
+}
+
+/* As 3 abas ocupam a mesma célula de grid, superpostas — assim a aba mais
+   alta define a altura do conjunto e o modal não "pula" de tamanho ao trocar
+   de aba. A aba escondida continua ocupando espaço (por baixo), só fica
+   invisível e fora da navegação por teclado. */
+.water-tab-panels {
+  display: grid;
+}
+
+.water-tab-panel {
+  grid-area: 1 / 1;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Nome próprio (não ".hidden") porque a classe utilitária ".hidden" usa
+   display:none !important em todo o app — aqui precisamos que a aba
+   escondida continue ocupando espaço na grade, só invisível. */
+.water-tab-panel.water-tab-panel-inactive {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.water-entries-total {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* ---- Editar um lançamento específico, dentro da linha ---- */
+
+.water-entry-edit-input {
+  width: 90px;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-soft);
+  background: var(--bg);
+  color: var(--text-dark);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 0 8px;
+}
+
+.water-entry-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.water-entry-edit,
+.water-entry-save,
+.water-entry-cancel {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.water-entry-save { color: var(--success); }
+.water-entry-edit svg,
+.water-entry-save svg,
+.water-entry-cancel svg { width: 14px; height: 14px; }
 
 .water-modal-grid {
   display: grid;
@@ -2007,6 +2163,8 @@ input[type="checkbox"] {
   padding: 6px 0;
 }
 
+.reminder-time-row.is-disabled { opacity: 0.5; }
+
 .reminder-time-row-label {
   font-size: 13px;
   font-weight: 600;
@@ -2025,7 +2183,34 @@ input[type="checkbox"] {
   flex-shrink: 0;
 }
 
+.reminder-time-row input[type="time"]:disabled { opacity: 0.6; }
+
+.reminder-time-row .switch-input {
+  flex-shrink: 0;
+}
+
+/* ---- Botão discreto "Adicionar hábito" dentro de Desafios de hoje ---- */
+
+.btn-text-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.btn-text-icon svg { width: 18px; height: 18px; }
+
 .card-danger { border: 2px solid var(--danger-bg); }
+
+.card-danger .btn + .btn { margin-top: 10px; }
 
 /* ---------- Banner de lembrete ---------- */
 

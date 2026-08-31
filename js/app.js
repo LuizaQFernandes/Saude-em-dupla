@@ -20,7 +20,7 @@
   const THEME_COLOR_BY_MODE = { light: '#F7F6EE', dark: '#14170F' };
 
   let currentDateKey = Habits.todayKey();
-  let currentSummaryTab = 'completo';
+  let currentSummaryTab = 'compacto';
   let pendingConfirm = null;
   let pendingOnboardingName = '';
 
@@ -162,6 +162,7 @@
   function refreshWaterModalIfOpen(day) {
     if (!UI.$('modal-water').classList.contains('hidden')) {
       UI.renderWaterEntries(day.waterEntries);
+      UI.renderWaterEntriesTotal(day.waterMl);
       UI.renderWaterModalSummary(day, Users.getSettings(uid()).waterGoalMl || 3000);
     }
   }
@@ -218,11 +219,22 @@
     UI.showToast('Registro removido.', 1500);
   }
 
+  /** Edita a quantidade de um registro específico do extrato (mantém o mesmo horário). */
+  function editWaterEntryAt(entryIndex, newMl) {
+    const userId = uid();
+    const key = Habits.todayKey();
+    Progress.updateWaterEntryAt(userId, key, entryIndex, newMl);
+    renderToday();
+    refreshWaterModalIfOpen(Progress.getDay(userId, key));
+    UI.showToast('Registro atualizado.', 1500);
+  }
+
   function openWaterModal() {
     const userId = uid();
     const day = Progress.getDay(userId, Habits.todayKey());
     const goalMl = Users.getSettings(userId).waterGoalMl || 3000;
     UI.renderWaterEntries(day.waterEntries);
+    UI.renderWaterEntriesTotal(day.waterMl);
     UI.renderWaterModalSummary(day, goalMl);
     UI.$('water-modal-goal-input').value = goalMl;
     const signBtn = UI.$('water-custom-sign');
@@ -230,6 +242,7 @@
     signBtn.textContent = '+';
     UI.$('water-custom-add').textContent = 'Adicionar';
     UI.$('water-custom-input').value = '';
+    UI.switchWaterTab('goal');
     UI.openModal('modal-water');
   }
 
@@ -380,7 +393,8 @@
   function renderConfigScreen() {
     const userId = uid();
     UI.renderConfigForm(Users.getSettings(userId), Users.getCurrentUser().name);
-    UI.renderReminderTimesConfig(Reminders.getScheduleWithTimes(Users.getSettings(userId)));
+    UI.renderReminderTimesConfig(Reminders.getScheduleForConfig(userId));
+    UI.setWorkdayChips(Users.getSettings(userId).workDays || [1, 2, 3, 4, 5]);
   }
 
   function saveConfigForm() {
@@ -390,13 +404,15 @@
     const workStart = UI.$('config-work-start').value || '08:00';
     const workEnd = UI.$('config-work-end').value || '18:00';
     const remindersEnabled = UI.$('config-reminders-toggle').checked;
+    const workDays = UI.getWorkdayChipsSelection();
 
     if (name) Users.setUserName(name);
     Users.updateSettings(userId, {
       waterGoalMl: Number.isFinite(waterGoal) && waterGoal > 0 ? waterGoal : 3000,
       workStart,
       workEnd,
-      remindersEnabled
+      remindersEnabled,
+      workDays: workDays.length ? workDays : [1, 2, 3, 4, 5]
     });
 
     UI.showToast('Configurações salvas! 💚');
@@ -408,6 +424,12 @@
     const settings = Users.getSettings(userId);
     const reminderTimes = Object.assign({}, settings.reminderTimes || {}, { [reminderId]: value });
     Users.updateSettings(userId, { reminderTimes });
+  }
+
+  function toggleReminderDisabled(reminderId, disabled) {
+    const userId = uid();
+    Users.setReminderDisabled(userId, reminderId, disabled);
+    UI.renderReminderTimesConfig(Reminders.getScheduleForConfig(userId));
   }
 
   function openClearHistoryConfirm() {
@@ -429,6 +451,27 @@
           renderToday();
           renderWeek();
           renderHistory();
+        };
+      }, 200);
+    };
+  }
+
+  /** Apaga TUDO deste dispositivo (perfil, hábitos e histórico) e recomeça no onboarding. */
+  function openLogoutConfirm() {
+    UI.openConfirm(
+      'Sair do app',
+      'Isso vai apagar TODOS os dados salvos neste aparelho (perfil, hábitos e histórico) e reiniciar o app do zero. Deseja continuar?'
+    );
+    pendingConfirm = () => {
+      UI.closeModal('modal-confirm');
+      setTimeout(() => {
+        UI.openConfirm(
+          'Tem certeza mesmo?',
+          'Essa ação não pode ser desfeita. Seu perfil e todo o histórico serão apagados permanentemente.'
+        );
+        pendingConfirm = () => {
+          Storage.resetAll();
+          window.location.reload();
         };
       }, 200);
     };
@@ -576,8 +619,8 @@
   }
 
   function openSummaryModal() {
-    currentSummaryTab = 'completo';
-    UI.setActiveSummaryTab('completo');
+    currentSummaryTab = 'compacto';
+    UI.setActiveSummaryTab('compacto');
     refreshSummaryText();
     UI.openModal('modal-summary');
   }
@@ -604,24 +647,13 @@
   }
 
   // ---------------------------------------------------------------
-  // Onboarding (passo 1: nome · passo 2: hábitos obrigatórios)
+  // Onboarding (passo 1: nome · passo 2: hábitos ativos · passo 3: dias de trabalho)
   // ---------------------------------------------------------------
   function initOnboarding() {
-    const nameButtons = document.querySelectorAll('.onboarding-name-btn');
     const input = UI.$('onboarding-input');
     const nextBtn = UI.$('onboarding-next');
 
-    nameButtons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        nameButtons.forEach((b) => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        input.value = btn.dataset.name;
-        nextBtn.disabled = false;
-      });
-    });
-
     input.addEventListener('input', () => {
-      nameButtons.forEach((b) => b.classList.remove('selected'));
       nextBtn.disabled = input.value.trim().length === 0;
     });
 
@@ -630,22 +662,30 @@
       if (!name) return;
       pendingOnboardingName = name;
       Habits.seedDefaults();
-      UI.renderMandatoryPicker(Habits.listAllHabits());
-      UI.showOnboardingStep('mandatory');
+      UI.renderHabitActivePicker(Habits.listAllHabits());
+      UI.showOnboardingStep('habits');
     });
 
-    UI.$('mandatory-picker-list').addEventListener('change', (e) => {
+    UI.$('habit-active-picker-list').addEventListener('change', (e) => {
       const checkbox = e.target.closest('input[data-picker-habit]');
       if (!checkbox) return;
-      const row = checkbox.closest('.mandatory-picker-row');
+      const row = checkbox.closest('.habit-picker-row');
       row.classList.toggle('checked', checkbox.checked);
     });
 
+    UI.$('onboarding-habits-next').addEventListener('click', () => {
+      UI.showOnboardingStep('workdays');
+    });
+
     UI.$('onboarding-finish').addEventListener('click', () => {
-      const checked = Array.from(document.querySelectorAll('#mandatory-picker-list input[data-picker-habit]:checked')).map(
+      const checked = Array.from(document.querySelectorAll('#habit-active-picker-list input[data-picker-habit]:checked')).map(
         (el) => el.dataset.pickerHabit
       );
+      const workDays = Array.from(document.querySelectorAll('#workday-picker input[data-workday]:checked')).map((el) =>
+        Number(el.dataset.workday)
+      );
       Users.createUser(pendingOnboardingName, checked);
+      Users.updateSettings(Users.getCurrentUserId(), { workDays: workDays.length ? workDays : [1, 2, 3, 4, 5] });
       UI.showApp();
       renderToday();
     });
@@ -727,11 +767,39 @@
       }
     });
 
-    // Modal de água: remover um registro específico do extrato
+    // Modal de água: abas (Meta diária / Ajustar volume / Registros do dia)
+    UI.$('modal-water').addEventListener('click', (e) => {
+      const tabBtn = e.target.closest('.water-tab');
+      if (!tabBtn) return;
+      UI.switchWaterTab(tabBtn.dataset.waterTab);
+    });
+
+    // Modal de água: registros do dia (editar/salvar/cancelar/remover cada lançamento)
     UI.$('water-entries-list').addEventListener('click', (e) => {
       const deleteBtn = e.target.closest('.water-entry-delete');
-      if (!deleteBtn) return;
-      removeWaterEntryAt(Number(deleteBtn.dataset.entryIndex));
+      const editBtn = e.target.closest('.water-entry-edit');
+      const saveBtn = e.target.closest('.water-entry-save');
+      const cancelBtn = e.target.closest('.water-entry-cancel');
+      if (deleteBtn) {
+        removeWaterEntryAt(Number(deleteBtn.dataset.entryIndex));
+        return;
+      }
+      if (editBtn) {
+        const day = Progress.getDay(uid(), Habits.todayKey());
+        const entry = day.waterEntries[Number(editBtn.dataset.entryEdit)];
+        UI.showWaterEntryEditRow(Number(editBtn.dataset.entryEdit), entry ? entry.ml : 0);
+        return;
+      }
+      if (cancelBtn) {
+        UI.renderWaterEntries(Progress.getDay(uid(), Habits.todayKey()).waterEntries);
+        return;
+      }
+      if (saveBtn) {
+        const entryIndex = Number(saveBtn.dataset.entrySave);
+        const row = saveBtn.closest('.water-entry-row');
+        const value = parseInt(row.querySelector('.water-entry-edit-input').value, 10);
+        if (Number.isFinite(value)) editWaterEntryAt(entryIndex, value);
+      }
     });
 
     // Modal de água: editar a meta diária
@@ -795,10 +863,19 @@
     // Configurações
     UI.$('config-save').addEventListener('click', saveConfigForm);
     UI.$('config-clear-history').addEventListener('click', openClearHistoryConfirm);
+    UI.$('config-logout').addEventListener('click', openLogoutConfirm);
     UI.$('reminder-times-list').addEventListener('change', (e) => {
-      const input = e.target.closest('input[data-reminder-id]');
-      if (!input) return;
-      updateReminderTime(input.dataset.reminderId, input.value);
+      const timeInput = e.target.closest('input[data-reminder-id]');
+      const toggleInput = e.target.closest('input[data-reminder-toggle]');
+      if (timeInput) updateReminderTime(timeInput.dataset.reminderId, timeInput.value);
+      if (toggleInput) toggleReminderDisabled(toggleInput.dataset.reminderToggle, !toggleInput.checked);
+    });
+
+    // Dias de trabalho (Configurações)
+    UI.$('config-workday-chips').addEventListener('click', (e) => {
+      const chip = e.target.closest('.workday-chip');
+      if (!chip) return;
+      chip.classList.toggle('selected');
     });
 
     // Meus hábitos
@@ -818,6 +895,13 @@
       renderToday();
     });
     UI.$('open-add-habit').addEventListener('click', openHabitFormForCreate);
+    const homeAddHabitBtn = UI.$('home-add-habit-btn');
+    if (homeAddHabitBtn) {
+      homeAddHabitBtn.addEventListener('click', () => {
+        renderMyHabitsScreen();
+        UI.openMyHabitsScreen();
+      });
+    }
 
     function habitListChangeHandler(e) {
       const activeToggle = e.target.closest('input[data-active-toggle]');
@@ -854,9 +938,10 @@
 
     // Revalida ao voltar para o app (troca de dia / lembretes perdidos)
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') renderToday();
+      if (document.visibilityState === 'visible' && Users.hasUser()) renderToday();
     });
     setInterval(() => {
+      if (!Users.hasUser()) return;
       if (Habits.todayKey() !== currentDateKey) {
         renderToday();
       } else {

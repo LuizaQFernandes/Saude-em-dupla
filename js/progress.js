@@ -84,6 +84,23 @@ const Progress = (() => {
     return day;
   }
 
+  /** Corrige o valor de um lançamento específico (editar, não remover). */
+  function updateWaterEntryAt(userId, dateKey, entryIndex, newMl) {
+    const day = getDay(userId, dateKey);
+    const entry = day.waterEntries[entryIndex];
+    if (!entry) return day;
+    const requested = Math.round(Number(newMl) || 0);
+    const delta = requested - entry.ml;
+    const before = day.waterMl;
+    const after = Math.max(0, before + delta);
+    const appliedDelta = after - before;
+    day.waterMl = after;
+    entry.ml = entry.ml + appliedDelta;
+    updateWaterHabitFlag(userId, day);
+    Storage.save();
+    return day;
+  }
+
   function waterGoalReached(userId, dateKey) {
     const day = peekDay(userId, dateKey);
     return day.waterMl >= (Users.getSettings(userId).waterGoalMl || 3000);
@@ -135,6 +152,7 @@ const Progress = (() => {
     toggleHabit,
     addWater,
     removeWaterEntryAt,
+    updateWaterEntryAt,
     waterGoalReached,
     waterPercent,
     calculateDailyPoints,

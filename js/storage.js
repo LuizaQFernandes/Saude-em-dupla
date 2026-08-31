@@ -50,7 +50,15 @@ const Storage = (() => {
       workStart: '08:00',
       workEnd: '18:00',
       remindersEnabled: true,
-      reminderTimes: {}
+      reminderTimes: {},
+      // Dias em que a pessoa trabalha (0=domingo ... 6=sábado, igual a Date#getDay()).
+      // Usado para priorizar lembretes de exercício à noite (dia de trabalho)
+      // ou de manhã (dia de folga) — ver reminders.js.
+      workDays: [1, 2, 3, 4, 5],
+      // Ids de lembretes que o usuário desativou individualmente (não aparecem
+      // mais como pendentes nem disparam, mas continuam na lista para poder
+      // reativar depois).
+      disabledReminders: []
     };
   }
 
@@ -167,11 +175,27 @@ const Storage = (() => {
     save();
   }
 
+  /**
+   * Apaga TUDO deste dispositivo (perfil, hábitos, histórico, tema) e volta
+   * o app para o estado de primeira abertura — usado pelo botão "Sair do
+   * app". Diferente de clearAllHistory, aqui não sobra nada para migrar.
+   */
+  function resetAll() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('saudeEmDupla:theme');
+    } catch (err) {
+      console.error('Falha ao apagar dados locais.', err);
+    }
+    cache = emptyData();
+  }
+
   return {
     uid,
     getData,
     save,
     clearAllHistory,
+    resetAll,
     defaultDayProgress,
     defaultUserSettings
   };

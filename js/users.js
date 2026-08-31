@@ -5,7 +5,7 @@
  * Regra central deste app: "obrigatório" e "ativo" NUNCA são propriedades
  * do hábito (isso é global, em habits.js) — são configuração individual
  * de cada pessoa em relação àquele hábito. O mesmo hábito pode ser
- * obrigatório para Matheus e opcional para Luiza.
+ * obrigatório para uma pessoa e opcional para a outra.
  *
  * Invariante garantida por este módulo (nunca deixamos o estado
  * inconsistente): active=false ⇒ mandatory=false.
@@ -30,18 +30,20 @@ const Users = (() => {
   }
 
   /**
-   * Cria o usuário local (primeira utilização). initialMandatoryIds é a
-   * lista de hábitos que o usuário marcou como obrigatórios na configuração
-   * inicial — todos os hábitos do catálogo atual entram como "ativos".
+   * Cria o usuário local (primeira utilização). activeHabitIds é a lista de
+   * hábitos padrão que a pessoa escolheu usar na configuração inicial — os
+   * demais hábitos padrão continuam existindo no catálogo, só que inativos
+   * (dá pra ativar depois em "Meus hábitos"). Obrigatoriedade não é decidida
+   * no onboarding — começa sempre como não-obrigatório para todos.
    */
-  function createUser(name, initialMandatoryIds) {
+  function createUser(name, activeHabitIds) {
     Habits.seedDefaults();
     const data = Storage.getData();
     const userId = Storage.uid('u');
-    const mandatorySet = new Set(initialMandatoryIds || []);
+    const activeSet = new Set(activeHabitIds || []);
     const habitSettings = {};
     Habits.listAllHabits().forEach((habit) => {
-      habitSettings[habit.id] = { active: true, mandatory: mandatorySet.has(habit.id) };
+      habitSettings[habit.id] = { active: activeSet.has(habit.id), mandatory: false };
     });
 
     data.users[userId] = {
@@ -143,6 +145,25 @@ const Users = (() => {
     return user.settings;
   }
 
+  /** `date.getDay()` (0=domingo...6=sábado) está entre os dias de trabalho desse usuário? */
+  function isWorkDay(userId, date) {
+    const workDays = getSettings(userId).workDays || [1, 2, 3, 4, 5];
+    return workDays.includes(date.getDay());
+  }
+
+  function isReminderDisabled(userId, reminderId) {
+    const disabled = getSettings(userId).disabledReminders || [];
+    return disabled.includes(reminderId);
+  }
+
+  function setReminderDisabled(userId, reminderId, disabled) {
+    const current = getSettings(userId).disabledReminders || [];
+    const next = disabled
+      ? Array.from(new Set([...current, reminderId]))
+      : current.filter((id) => id !== reminderId);
+    updateSettings(userId, { disabledReminders: next });
+  }
+
   return {
     getCurrentUserId,
     getCurrentUser,
@@ -159,6 +180,9 @@ const Users = (() => {
     getActiveHabits,
     getMandatoryHabits,
     getSettings,
-    updateSettings
+    updateSettings,
+    isWorkDay,
+    isReminderDisabled,
+    setReminderDisabled
   };
 })();
