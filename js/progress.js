@@ -50,6 +50,20 @@ const Progress = (() => {
   }
 
   /**
+   * Recalcula a flag de conclusão do hábito de água para uma data
+   * específica com base na meta ATUAL do usuário. Necessário sempre que a
+   * meta é alterada: o volume não mudou nesse momento, então nada dispara
+   * addWater/updateWaterEntryAt — sem chamar isso, completedHabits.agua
+   * fica "congelado" com o resultado calculado contra a meta antiga.
+   */
+  function recalcWaterHabit(userId, dateKey) {
+    const day = getDay(userId, dateKey);
+    updateWaterHabitFlag(userId, day);
+    Storage.save();
+    return day;
+  }
+
+  /**
    * Registra um lançamento de água. `ml` pode ser positivo (adicionar) ou
    * negativo (remover) — o total nunca fica abaixo de zero. O que é
    * efetivamente guardado no "extrato" (waterEntries) é sempre a variação
@@ -153,6 +167,7 @@ const Progress = (() => {
     addWater,
     removeWaterEntryAt,
     updateWaterEntryAt,
+    recalcWaterHabit,
     waterGoalReached,
     waterPercent,
     calculateDailyPoints,
