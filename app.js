@@ -85,6 +85,12 @@
     currentDateKey = Habits.todayKey();
     const now = new Date();
     const day = Progress.getDay(userId, currentDateKey); // cria o registro de hoje se necessário
+    // Autocorreção: garante que completedHabits.agua nunca fique
+    // dessincronizado da meta atual, mesmo que ela tenha sido alterada em
+    // uma sessão/versão anterior sem passar pelos pontos que já chamam
+    // recalcWaterHabit (addWater ou salvar a meta). Barato e idempotente —
+    // seguro de rodar a cada render de "Hoje".
+    Progress.recalcWaterHabit(userId, currentDateKey);
     const settings = Users.getSettings(userId);
 
     UI.setHeaderDate(Habits.formatHeaderDate(now));
