@@ -21,6 +21,7 @@
 
   let currentDateKey = Habits.todayKey();
   let currentSummaryTab = 'compacto';
+  let editingYesterdayKey = null;
   let pendingConfirm = null;
   let pendingOnboardingName = '';
 
@@ -54,6 +55,12 @@
 
   function uid() {
     return Users.getCurrentUserId();
+  }
+
+  function getYesterdayKey() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return Habits.dateToKey(yesterday);
   }
 
   // ---------------------------------------------------------------
@@ -346,6 +353,81 @@
     UI.renderWeekDays(rows);
   }
 
+  function openYesterdayEditor() {
+    const userId = uid();
+    const dateKey = getYesterdayKey();
+    const day = Progress.peekDay(userId, dateKey);
+    const activeHabits = Users.getActiveHabits(userId);
+    const settings = Users.getSettings(userId);
+    const waterGoalMl = settings.waterGoalMl || 3000;
+    editingYesterdayKey = dateKey;
+
+    UI.renderYesterdayEditor({
+      dateLabel: Habits.formatShortDate(Habits.keyToDate(dateKey)),
+      habits: activeHabits.map((habit) => ({
+        id: habit.id,
+        name: habit.name,
+        icon: habit.icon,
+        completed: habit.id === Habits.WATER_HABIT_ID
+          ? day.waterMl >= waterGoalMl
+          : !!day.completedHabits[habit.id],
+        isWater: habit.id === Habits.WATER_HABIT_ID
+      })),
+      waterActive: activeHabits.some((habit) => habit.id === Habits.WATER_HABIT_ID),
+      waterMl: day.waterMl,
+      waterGoalMl
+    });
+    UI.openModal('modal-edit-yesterday');
+  }
+
+  function saveYesterdayEdits() {
+    if (!editingYesterdayKey) return false;
+    if (editingYesterdayKey !== getYesterdayKey()) {
+      UI.closeModal('modal-edit-yesterday');
+      editingYesterdayKey = null;
+      UI.showToast('Ontem mudou. Abra a edição novamente.');
+      return false;
+    }
+
+    const userId = uid();
+    const dateKey = editingYesterdayKey;
+    const activeHabits = Users.getActiveHabits(userId);
+    const day = Progress.peekDay(userId, dateKey);
+    const desiredStates = activeHabits
+      .filter((habit) => habit.id !== Habits.WATER_HABIT_ID)
+      .map((habit) => {
+        const checkbox = document.querySelector(`[data-yesterday-habit="${habit.id}"]`);
+        return { id: habit.id, completed: !!(checkbox && checkbox.checked) };
+      });
+    const waterActive = activeHabits.some((habit) => habit.id === Habits.WATER_HABIT_ID);
+    const waterInput = UI.$('yesterday-water-total');
+    const targetWaterMl = waterActive ? Number(waterInput.value) : day.waterMl;
+
+    if (waterActive && (!waterInput.value.trim() || !Number.isFinite(targetWaterMl) || targetWaterMl < 0 || !Number.isInteger(targetWaterMl))) {
+      UI.showToast('Digite um total de água válido.');
+      waterInput.focus();
+      return false;
+    }
+
+    desiredStates.forEach(({ id, completed }) => {
+      if (!!day.completedHabits[id] !== completed) Progress.toggleHabit(userId, id, dateKey);
+    });
+
+    const waterDelta = targetWaterMl - day.waterMl;
+    if (waterActive && waterDelta !== 0) {
+      Progress.addWater(userId, dateKey, waterDelta, `${formatTimeNow()} · ajuste`);
+      Progress.recalcWaterHabit(userId, dateKey);
+    } else if (Progress.getAllDays(userId)[dateKey] && waterActive) {
+      Progress.recalcWaterHabit(userId, dateKey);
+    }
+
+    renderWeek();
+    UI.closeModal('modal-edit-yesterday');
+    editingYesterdayKey = null;
+    UI.showToast('Ontem atualizado.');
+    return true;
+  }
+
   /** Dashboard do Histórico: gráfico de barras, heatmap de consistência e ranking por hábito. */
   function renderHistory() {
     const userId = uid();
@@ -568,15 +650,14 @@
     return `${date.getDate()} ${MONTH_SHORT[date.getMonth()]}`;
   }
 
-  function buildFullSummary() {
+  function buildFullSummary(dateKey = Habits.todayKey()) {
     const userId = uid();
-    const now = new Date();
-    const key = Habits.todayKey();
+    const date = Habits.keyToDate(dateKey);
     const name = Users.getCurrentUser().name || 'Eu';
     const activeHabits = Users.getActiveHabits(userId);
-    const day = Progress.getDay(userId, key);
-    const { done, total } = Progress.calculateDailyPoints(userId, key);
-    const percent = Progress.calculateDailyProgress(userId, key);
+    const day = dateKey === Habits.todayKey() ? Progress.getDay(userId, dateKey) : Progress.peekDay(userId, dateKey);
+    const { done, total } = Progress.calculateDailyPoints(userId, dateKey);
+    const percent = Progress.calculateDailyProgress(userId, dateKey);
     const completed = activeHabits.filter((h) => day.completedHabits[h.id]);
     const mandatoryHabits = Users.getMandatoryHabits(userId);
     const pendingMandatory = mandatoryHabits.filter((h) => !day.completedHabits[h.id]);
@@ -585,7 +666,7 @@
     lines.push('💚 RESUMO DO DIA');
     lines.push('');
     lines.push(name);
-    lines.push(`📅 ${summaryDateLabel(now)}`);
+    lines.push(`📅 ${summaryDateLabel(date)}`);
     lines.push('');
     lines.push(`${done} / ${total} hábitos`);
     lines.push(`${percent}%`);
@@ -609,20 +690,19 @@
     return lines.join('\n');
   }
 
-  function buildCompactSummary() {
+  function buildCompactSummary(dateKey = Habits.todayKey()) {
     const userId = uid();
-    const now = new Date();
-    const key = Habits.todayKey();
+    const date = Habits.keyToDate(dateKey);
     const name = Users.getCurrentUser().name || 'Eu';
     const activeHabits = Users.getActiveHabits(userId);
-    const day = Progress.getDay(userId, key);
-    const { done, total } = Progress.calculateDailyPoints(userId, key);
+    const day = dateKey === Habits.todayKey() ? Progress.getDay(userId, dateKey) : Progress.peekDay(userId, dateKey);
+    const { done, total } = Progress.calculateDailyPoints(userId, dateKey);
     const emojis = activeHabits.filter((h) => day.completedHabits[h.id]).map((h) => h.icon).join('');
-    return `💚 ${Habits.formatShortDate(now)}\n${name} ${done}/${total} ${emojis}`.trim();
+    return `💚 ${Habits.formatShortDate(date)}\n${name} ${done}/${total} ${emojis}`.trim();
   }
 
-  function refreshSummaryText() {
-    const text = currentSummaryTab === 'completo' ? buildFullSummary() : buildCompactSummary();
+  function refreshSummaryText(dateKey = Habits.todayKey()) {
+    const text = currentSummaryTab === 'completo' ? buildFullSummary(dateKey) : buildCompactSummary(dateKey);
     UI.setSummaryText(text);
   }
 
@@ -652,6 +732,20 @@
         return false;
       }
     }
+  }
+
+  async function shareText(text, onFallback) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+    const copied = await copyText(text);
+    if (onFallback) onFallback(copied);
+    return copied;
   }
 
   // ---------------------------------------------------------------
@@ -819,6 +913,24 @@
     // Botão gerar resumo
     UI.$('btn-generate-summary').addEventListener('click', openSummaryModal);
 
+    // Editar somente o registro de ontem
+    UI.$('edit-yesterday-btn').addEventListener('click', openYesterdayEditor);
+    UI.$('yesterday-habits-list').addEventListener('change', (e) => {
+      const checkbox = e.target.closest('input[data-yesterday-habit]');
+      if (!checkbox) return;
+      checkbox.nextElementSibling.textContent = checkbox.checked ? 'Concluído' : 'Pendente';
+      const habitName = checkbox.closest('.yesterday-habit-row').querySelector('.yesterday-habit-name').textContent;
+      checkbox.parentElement.setAttribute('aria-label', `${checkbox.checked ? 'Desmarcar' : 'Marcar'} ${habitName} como concluído`);
+    });
+    UI.$('edit-yesterday-save').addEventListener('click', () => saveYesterdayEdits());
+    UI.$('edit-yesterday-share').addEventListener('click', async () => {
+      const dateKey = editingYesterdayKey;
+      if (!dateKey || !saveYesterdayEdits()) return;
+      await shareText(buildCompactSummary(dateKey), (copied) => {
+        UI.showToast(copied ? 'Resumo de ontem copiado!' : 'Não foi possível copiar o resumo.');
+      });
+    });
+
     // Abas do resumo
     document.querySelectorAll('.summary-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
@@ -835,16 +947,9 @@
     });
     UI.$('summary-share').addEventListener('click', async () => {
       const text = UI.$('summary-text').value;
-      if (navigator.share) {
-        try {
-          await navigator.share({ text });
-        } catch (err) {
-          // usuário cancelou o compartilhamento — nada a fazer
-        }
-      } else {
-        const ok = await copyText(text);
-        UI.setSummaryFeedback(ok ? 'Resumo copiado! 💚' : 'Não foi possível copiar automaticamente.');
-      }
+      await shareText(text, (copied) => {
+        UI.setSummaryFeedback(copied ? 'Resumo copiado! 💚' : 'Não foi possível copiar automaticamente.');
+      });
     });
 
     // Fechar modais (botão "Fechar/Cancelar" e clique fora do sheet)

@@ -357,6 +357,31 @@ const UI = (() => {
       .join('');
   }
 
+  function renderYesterdayEditor({ dateLabel, habits, waterActive, waterMl, waterGoalMl }) {
+    $('edit-yesterday-date').textContent = dateLabel;
+    $('yesterday-habits-list').innerHTML = habits.length
+      ? habits.map((habit) => `
+        <div class="yesterday-habit-row">
+          <div class="yesterday-habit-main">
+            <span class="yesterday-habit-icon">${escapeHtml(habit.icon)}</span>
+            <span class="yesterday-habit-name">${escapeHtml(habit.name)}</span>
+          </div>
+          ${habit.isWater
+            ? `<span class="yesterday-habit-status">${habit.completed ? 'Concluído' : 'Pendente'}</span>`
+            : `<label class="yesterday-habit-toggle" aria-label="${habit.completed ? 'Desmarcar' : 'Marcar'} ${escapeHtml(habit.name)} como concluído">
+                <input type="checkbox" data-yesterday-habit="${escapeHtml(habit.id)}" ${habit.completed ? 'checked' : ''} />
+                <span>${habit.completed ? 'Concluído' : 'Pendente'}</span>
+              </label>`}
+        </div>`).join('')
+      : '<p class="edit-yesterday-hint">Nenhum hábito ativo.</p>';
+
+    $('yesterday-water-section').classList.toggle('hidden', !waterActive);
+    if (waterActive) {
+      $('yesterday-water-total').value = String(waterMl);
+      $('yesterday-water-goal').textContent = `Meta atual: ${Number(waterGoalMl).toLocaleString('pt-BR')} ml`;
+    }
+  }
+
   // ---------- Histórico: dashboard ----------
 
   /** rows: [{ label, percent, isToday }], já em ordem cronológica (mais antigo → hoje). */
@@ -723,6 +748,7 @@ const UI = (() => {
     renderClosing,
     renderWeekStats,
     renderWeekDays,
+    renderYesterdayEditor,
     renderHistoryChart,
     renderHistoryHeatmap,
     renderHabitConsistency,

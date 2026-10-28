@@ -1636,6 +1636,14 @@ input[type="checkbox"] {
 
 .week-day-row.is-today { border: 2px solid var(--primary-dark); }
 
+.week-edit-yesterday {
+  align-self: flex-end;
+  width: auto;
+  min-height: 36px;
+  margin: 0;
+  padding: 4px 8px;
+}
+
 .week-day-name {
   font-size: 14px;
   font-weight: 800;
@@ -1837,6 +1845,73 @@ input[type="checkbox"] {
 }
 
 .modal-sheet-center { border-radius: var(--radius-lg); }
+
+.modal-sheet-yesterday { gap: 8px; }
+
+.edit-yesterday-date,
+.edit-yesterday-hint {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.yesterday-habits-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 34svh;
+  overflow-y: auto;
+}
+
+.yesterday-habit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.yesterday-habit-main,
+.yesterday-habit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.yesterday-habit-main { min-width: 0; }
+
+.yesterday-habit-icon { flex-shrink: 0; }
+
+.yesterday-habit-name {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.yesterday-habit-toggle {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.yesterday-habit-toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary-dark);
+}
+
+.yesterday-habit-status {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.yesterday-water-section {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.edit-yesterday-hint { margin-top: 8px; }
 
 .modal-handle {
   width: 40px;

@@ -257,6 +257,10 @@
       <section class="section-block">
         <h2 class="section-title">Dias da semana</h2>
         <div class="week-days-list" id="week-days-list"></div>
+        <button type="button" id="edit-yesterday-btn" class="btn-text-icon week-edit-yesterday">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5 19.5 8.5 8 20H4v-4z"/><path d="M13.5 6.5 17.5 10.5"/></svg>
+          Editar ontem
+        </button>
       </section>
     </section>
 
@@ -541,6 +545,30 @@
     </div>
 
     <button type="button" class="btn btn-text modal-close-btn" data-close-modal="modal-water">Fechar</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: EDITAR ONTEM ===================== -->
+<div id="modal-edit-yesterday" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="edit-yesterday-title">
+  <div class="modal-sheet modal-sheet-yesterday">
+    <div class="modal-handle"></div>
+    <h2 id="edit-yesterday-title" class="modal-title">Editar ontem</h2>
+    <p class="edit-yesterday-date" id="edit-yesterday-date"></p>
+    <div class="yesterday-habits-list" id="yesterday-habits-list"></div>
+    <div id="yesterday-water-section" class="yesterday-water-section hidden">
+      <label class="field-label" for="yesterday-water-total">Hidratação de ontem</label>
+      <div class="water-goal-edit-row">
+        <input id="yesterday-water-total" class="text-input" type="number" min="0" step="1" inputmode="numeric" />
+        <span class="water-goal-unit">ml</span>
+      </div>
+      <p class="edit-yesterday-hint" id="yesterday-water-goal"></p>
+    </div>
+    <button type="button" id="edit-yesterday-save" class="btn btn-primary btn-block btn-form-submit">Salvar</button>
+    <button type="button" id="edit-yesterday-share" class="btn btn-outline btn-block btn-with-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M8.1 10.8l7.8-4.6M8.1 13.2l7.8 4.6"/></svg>
+      Salvar e compartilhar
+    </button>
+    <button type="button" class="btn btn-text modal-close-btn" data-close-modal="modal-edit-yesterday">Cancelar</button>
   </div>
 </div>
 

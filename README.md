@@ -31,6 +31,7 @@ Não existe backend, banco de dados, API externa, login ou sincronização entre
 - Progresso do dia (círculo + pontuação + mensagem contextual do tipo "Faltam 3 hábitos...").
 - Lembretes contextuais dentro do app (não são notificações reais do sistema) baseados no horário e nos hábitos ainda pendentes.
 - Tela **Semana**: total de pontos, média diária, dias perfeitos, melhor dia, consistência e sequência atual (streak).
+- Na aba **Semana**, edite os hábitos e o total de hidratação de ontem e compartilhe novamente o resumo atualizado, sem alterar os demais dias.
 - Tela **Histórico**: últimos 7 dias com pontuação de cada um.
 - **Resumo do dia** pronto para colar no WhatsApp, em versão completa ou compacta, com botão de copiar e compartilhar (usa a Web Share API quando disponível).
 
